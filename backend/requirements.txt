@@ -1,0 +1,9 @@
+fastapi==0.137.1
+uvicorn[standard]==0.49.0
+pydantic==2.13.4
+python-multipart==0.0.32
+pandas==2.3.3
+numpy==2.4.3
+networkx==3.6.1
+ortools==9.15.6755
+scikit-learn==1.8.0

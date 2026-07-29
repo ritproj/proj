@@ -1,0 +1,169 @@
+Metadata-Version: 2.2
+Name: bqphy
+Version: 26.5.0
+Summary: BQPhy quantum-inspired optimisation bindings
+Author: BQPhy Engineering
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: C++
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: POSIX :: Linux
+Requires-Python: >=3.10
+Requires-Dist: numpy>=1.21
+Requires-Dist: pandas==2.3.3
+Description-Content-Type: text/markdown
+
+# BQPhy — Python Package
+
+Python bindings for the **BQPhy Optimiser** (C++), built with **pybind11** and **scikit-build-core**.
+Ships wheels for **Linux x86_64** and **Windows x86_64**, with optional **CUDA** and **OpenMP** support.
+C++ sources live under `../src`.
+
+## What’s inside
+
+* Extension module: **`bqphy/BQPhy_Optimiser.*`** (pybind11)
+* Package layout: `python/src/bqphy/` (`__init__.py`, `_version.py`)
+* Build system: **CMake** via **scikit-build-core** (PEP 517)
+
+## Quick start (users)
+
+```bash
+pip install bqphy-<version>-*.whl
+```
+
+Minimal usage:
+
+```bash
+python examples/binary_knapsack.py
+```
+
+## Build matrix we support
+
+* **Python**: CPython 3.12 (extend as needed)
+* **OS/Arch**: `linux_x86_64`, `win_amd64`
+* **Features**: CPU-only, OpenMP, CUDA (single wheel supports all code paths)
+
+Each wheel filename encodes: **name-version–python–ABI–platform**, e.g.
+`bqphy-0.0.1-cp312-cp312-linux_x86_64.whl`.
+
+---
+
+## Developer setup
+
+### Prereqs
+
+**Linux**
+
+* Python 3.12 + `pip`
+* Build tools: `gcc/g++` (or clang), `cmake`, `ninja` (recommended)
+* Optional: CUDA Toolkit (12.x) for GPU builds (`nvcc` on `PATH`)
+
+**Windows**
+
+* **Visual Studio 2022 Build Tools** (MSVC) — C++ workload
+* `cmake`, `ninja` (recommended)
+* Optional: CUDA Toolkit (12.x). Ensure `nvcc` is discoverable.
+
+---
+
+## Build the wheel (recommended)
+
+### Linux
+
+```bash
+python/scripts/linux/build_python.sh -Clean -Cuda -OpenMP -Wheel \
+  -CudaArch="70;75;80;86;89;90" -CudaRealOnly
+```
+
+### Windows (PowerShell)
+
+```powershell
+python\scripts\windows\build_python.ps1 -Clean -Cuda -OpenMP -Wheel `
+  -CudaArch "70;75;80;86;89;90" -CudaRealOnly
+```
+
+**Flags & env you can use**
+
+* `-Cuda` / `USE_CUDA=ON|OFF` — enable CUDA build
+* `-OpenMP` / `USE_OPENMP=ON|OFF`
+* `-CudaArch="70;75;80;86"` — sets `CMAKE_CUDA_ARCHITECTURES`
+* `-CudaRealOnly` — converts to `70-real;75-real;…` (emit SASS only; avoids PTX at runtime)
+* `FORCE_CUDA=1` — fail the build if `nvcc` is missing
+* `BQPHY_CUDA_ARCH` — alternative way to pass architectures, e.g. `70;75;80;86;89;90`
+
+Artifacts are copied to: `deliverables/python/`.
+
+> **Why `-CudaRealOnly`?**
+> Prevents `cudaErrorUnsupportedPtxVersion` on machines with older drivers by embedding SASS (no PTX).
+
+---
+
+## Local dev build (without wheel)
+
+Linux:
+
+```bash
+python/scripts/linux/build_python.sh -Cuda -OpenMP
+```
+
+Windows:
+
+```powershell
+python\scripts\windows\build_python.ps1 -Cuda -OpenMP
+```
+
+This configures CMake under `build/` and builds the extension in place.
+
+---
+
+## CI (Azure Pipelines) — minimal examples
+
+**Linux job**
+
+```yaml
+- bash: |
+    python/scripts/linux/build_python.sh -Clean -Cuda -OpenMP -Wheel \
+      -CudaArch="70;75;80;86;89;90" -CudaRealOnly
+  displayName: Build wheel (Linux)
+```
+
+**Windows job**
+
+```yaml
+- pwsh: |
+    python\scripts\windows\build_python.ps1 -Clean -Cuda -OpenMP -Wheel `
+      -CudaArch "70;75;80;86;89;90" -CudaRealOnly -Sdist
+  displayName: Build wheel (Windows)
+```
+
+> Our Windows script auto-loads MSVC via `vswhere` and discovers `nvcc`.
+
+---
+
+## Versioning
+
+Bump `python/src/bqphy/_version.py` before building wheels.
+
+---
+
+## Troubleshooting
+
+* **`cudaErrorUnsupportedPtxVersion` at runtime**
+  Rebuild wheels with **real-only SASS** for the target GPUs:
+  `-CudaRealOnly` (or set `BQPHY_CUDA_ARCH="70-real;80-real;86-real"`).
+
+* **`nvcc` not found**
+  Install the CUDA Toolkit and ensure `nvcc` is on `PATH`.
+  Or build CPU/OpenMP wheels only (omit `-Cuda`).
+
+* **Import works on CPU machines but GPU crashes**
+  This is expected: wheels include CUDA code, but GPU mode needs NVIDIA drivers. Use CPU/OpenMP mode on non-GPU hosts.
+
+---
+
+## Notes
+
+* CMake marks selected `.cpp` TUs as **CUDA** so `__CUDACC__` is defined and device code compiles alongside host code.
+* Windows wheels use **/DELAYLOAD** for CUDA DLLs so CPU-only machines can still import.
+* Linux prefers static CUDA libs where available to reduce runtime deps.
+
+---

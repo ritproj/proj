@@ -1,0 +1,25 @@
+bqphy/__init__.py,sha256=-NyfD0nqvWCwPnleXrA0VbLH4sOvFJO9ol12ioNldOw,463
+bqphy/_version.py,sha256=5agl4fscv3g-E3BXx2ze2mTkfrKLEWZJuflIh59aNsk,26
+bqphy/BQPhy_Optimiser.cp312-win_amd64.pyd,sha256=HGygeQkIDGskRsDH8LqRlRNe6QJ1XMgsppRnYa9UrCs,79956992
+bqphy/doc/Special Note-System Compatibility Guide.md,sha256=T5L-Ee4vTUI4pOryZR6J5V3KSa4KCLhw6w5kbsHqwq4,6958
+bqphy/doc/User Guide.md,sha256=eWTwP-z6XZ7YHZAr2PtHowR1qwaKuKUXXE4uXmMhscs,85407
+bqphy/examples/binary_knapsack_500items.py,sha256=IQs4rwf2SJW-WbGET1SlwMU055GKaCab6udBpYt9_B8,9078
+bqphy/examples/binary_knapsack_8items.py,sha256=k5ARM40uUBhCxdZfNtqgOuug3WKU8yVM81DrTA-CKpk,5161
+bqphy/examples/biObj_ZDT1.py,sha256=uS_5GhbqFc8LyGQLr-AITPRyXXrc7B6bBw_FhOSqmjo,3959
+bqphy/examples/biObj_ZDT2.py,sha256=F8prYxFgySk4_7RblktXAuC6LgGbNbm4yLGZ5kc4yDA,3832
+bqphy/examples/biObj_ZDT3.py,sha256=B6ObTGdhdKM40U9laaqNni_p2Zdz1o2mLIU-4gURQNc,4057
+bqphy/examples/constrained_pressure_vessel.py,sha256=dB_dPRBxsCRqrVHzQBj15m6_Wz4KE7p5FYFEhDgd4dw,6239
+bqphy/examples/continuous_ackley.py,sha256=IyMD-T90cCxNVVamaAkQUaYn3GfdnRF9xw9oEVtwZII,3762
+bqphy/examples/continuous_rastrigin.py,sha256=z_f4aXOnaRlfTGuz7I_LEM38gKXDnsdUe-EFEER2fbk,4378
+bqphy/examples/continuous_sphere.py,sha256=NfH37G094ngwHyhn70bQjh60yA80xDfTvDaykV8YAT8,2933
+bqphy/examples/k8_popInit.csv,sha256=2xKVQDxJoUqLie2-94ziPbaQB25HImbOxy8Bll-pa9U,338
+bqphy/examples/multiObj_DTLZ1.py,sha256=ZkH6KzKrLfkmjeNZXeyn1O6Iz9EUOO8dSNHWFiTZkqo,5234
+bqphy/examples/multiObj_DTLZ2.py,sha256=ewoawxjxkAY6-21UwRqy9J8-74jw6_Amzl4gSB1R_iU,4976
+bqphy/examples/multiObj_sample.py,sha256=ey572gjStf90EyCuE_VyKVFFS_vQMkoK3M88-zpgCQY,5300
+bqphy/examples/rast_popInit.csv,sha256=PUx1cVSq7yzTItVLmTVh0NzlITdOigQRWE8scLtQhOs,220
+bqphy/examples/README.md,sha256=QmMBvBTzO1waYMMIsDU7MZPzHgiLie73p48Xu8LHGvk,5576
+bqphy/license/license.txt,sha256=3S7Ow7gL-DShRCizbA1FyfCV47Fr13OAimhn2vDKM3w,20
+bqphy/resources/lookup_config.bin,sha256=1ayeZjiCAQ2_7xbTvAz-QVWrgVkqRD_BuPQLyL8IpZg,8000000
+bqphy-26.5.0.dist-info/METADATA,sha256=3XPsP2Kfm7_MPodec9-ngPB9LhHNIBRbURPhBJiApFs,4384
+bqphy-26.5.0.dist-info/WHEEL,sha256=iRw_rFuoPx3ccZ--hmGPhTmXnY5HgQPGh1UyQokugHM,106
+bqphy-26.5.0.dist-info/RECORD,,

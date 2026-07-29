@@ -1,0 +1,36 @@
+{
+  "routes": [
+    {
+      "vehicle_id": 0,
+      "path": [
+        {"id": "depot", "lat": 40.7128, "lng": -74.0060},
+        {"id": "customer_1", "lat": 40.7138, "lng": -74.0070},
+        {"id": "customer_2", "lat": 40.7148, "lng": -74.0080},
+        {"id": "depot", "lat": 40.7128, "lng": -74.0060}
+      ],
+      "distance_km": 15.2,
+      "load": 45,
+      "capacity": 100
+    },
+    {
+      "vehicle_id": 1,
+      "path": [
+        {"id": "depot", "lat": 40.7128, "lng": -74.0060},
+        {"id": "customer_3", "lat": 40.7118, "lng": -74.0050},
+        {"id": "depot", "lat": 40.7128, "lng": -74.0060}
+      ],
+      "distance_km": 8.5,
+      "load": 20,
+      "capacity": 100
+    }
+  ],
+  "stats": {
+    "distance_km": 23.7,
+    "fuel_l": 2.5,
+    "co2_kg": 6.8,
+    "n_customers": 3,
+    "n_vehicles": 2,
+    "runtime_s": 0.45
+  },
+  "vehicle_loads": [45, 20]
+}
