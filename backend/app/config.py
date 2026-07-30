@@ -25,3 +25,12 @@ QUANTUM_SOLVER_BACKEND: str = "qaoa"
 BQPHY_POPULATION: int = 200
 BQPHY_GENERATIONS: int = 800
 BQPHY_DELTA_THETA: float = 0.12
+
+# Maximum customers per direct BQPhy call before clustering kicks in.
+# BQPhy handles larger problems than the SA solver, so the ceiling is raised.
+# At N=16 customers and K=3 vehicles: 16×3=48 binary vars — well within reach.
+BQPHY_CUSTOMER_LIMIT: int = 16
+
+# Hard cap on binary variables BQPhy will optimise directly.
+# At 128 vars: 8 customers × 16 vehicles or 16 customers × 8 vehicles.
+BQPHY_QUBIT_LIMIT: int = 128

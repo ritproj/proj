@@ -477,16 +477,43 @@ def _solve_clustered_quantum(
     if not combined_routes:
         combined_routes = [[0, 0]]
 
+    print("-------------------------")
+    print("Entering clustered solver")
     # ── Step 6: Full CVRP validation ──────────────────────────────────────
     final_feasible, _ = validate_routes(combined_routes, customers, cap_list)
     if len(combined_routes) > K:
         final_feasible = False
         
+    print("\nInitial validation:")
+    print(f"feasible = {final_feasible}")
+        
     if not final_feasible:
-        feasible_all = False
+        print("\nRunning repair")
+        combined_routes, final_feasible = repair_routes(combined_routes, customers, cap_list, dist_matrix)
+        print("\nAfter repair:")
+        print(f"feasible = {final_feasible}")
 
-    # ── Step 7: 2-opt improvement ─────────────────────────────────────────
-    combined_routes = two_opt_improve(combined_routes, dist_matrix)
+    if not final_feasible:
+        print("\nRunning NN fallback")
+        combined_routes = nearest_neighbor_with_2opt(dist_matrix, customers, K, cap_list)
+        final_feasible, _ = validate_routes(combined_routes, customers, cap_list)
+        fallback_used_all = True
+        print("\nAfter fallback:")
+        print(f"feasible = {final_feasible}")
+    else:
+        # ── Step 7: 2-opt improvement ─────────────────────────────────────────
+        combined_routes = two_opt_improve(combined_routes, dist_matrix)
+
+    feasible_all = final_feasible
+
+    print("\nFinal route loads:")
+    demands_map = {c.customer_id: c.demand for c in customers}
+    for i, r in enumerate(combined_routes):
+        load = sum(demands_map.get(n, 0) for n in r if n != 0)
+        print(f"Vehicle {i+1}: {load}")
+    
+    print(f"\nfallback_used = {fallback_used_all}")
+    print("-------------------------")
 
     total_km = _total_dist(combined_routes, dist_matrix)
 
