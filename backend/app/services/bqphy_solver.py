@@ -338,7 +338,7 @@ class BQPhySolver(BaseQuantumSolver):
                 routes=[], total_distance_km=0.0, runtime_s=0.0,
                 feasible=False, fallback_used=False,
                 objective_best=0.0, objective_mean=0.0, objective_variance=0.0,
-                runs=0, n_vars=0, method="none", distance_matrix=dist_matrix,
+                runs=0, n_vars=0, method="infeasible", distance_matrix=dist_matrix,
                 infeasible_reason="TOTAL_DEMAND_EXCEEDS_FLEET_CAPACITY",
             )
         if max_demand > max_cap + 1e-6:
@@ -346,7 +346,7 @@ class BQPhySolver(BaseQuantumSolver):
                 routes=[], total_distance_km=0.0, runtime_s=0.0,
                 feasible=False, fallback_used=False,
                 objective_best=0.0, objective_mean=0.0, objective_variance=0.0,
-                runs=0, n_vars=0, method="none", distance_matrix=dist_matrix,
+                runs=0, n_vars=0, method="infeasible", distance_matrix=dist_matrix,
                 infeasible_reason="CUSTOMER_EXCEEDS_MAX_VEHICLE_CAPACITY",
             )
 
