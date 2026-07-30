@@ -18,3 +18,10 @@ assert abs(DECISION_DISTANCE_WEIGHT + DECISION_RUNTIME_WEIGHT - 1.0) < 1e-9, \
 
 # Clustering gate
 ENABLE_LIVE_CLUSTERING: bool = True
+
+QUANTUM_SOLVER_BACKEND: str = "qaoa"
+
+# BQPhy specific hyperparameters
+BQPHY_POPULATION: int = 200
+BQPHY_GENERATIONS: int = 800
+BQPHY_DELTA_THETA: float = 0.12

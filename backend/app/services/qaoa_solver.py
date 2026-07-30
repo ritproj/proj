@@ -17,9 +17,16 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
+
+from app.services.quantum_result import QuantumResult
+from app.services.base_solver import BaseQuantumSolver
+
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+
+from app.services.fitness import evaluate_qubo_energy
+
 
 from app.models.customer import Customer
 from app.models.depot import Depot
@@ -45,22 +52,6 @@ MAX_ITER             = 150    # COBYLA iterations
 QAOA_CUSTOMER_LIMIT  = 8      # customers accepted before clustering kicks in
 QAOA_QUBIT_LIMIT     = 24     # n_vars limit: ≤16 → exhaustive, 17-24 → SA, >24 → NN+2opt
 
-
-@dataclass
-class QuantumResult:
-    routes: List[List[int]]
-    total_distance_km: float
-    runtime_s: float
-    feasible: bool
-    fallback_used: bool
-    objective_best: float
-    objective_mean: float
-    objective_variance: float
-    runs: int
-    n_vars: int
-    method: str   # "exhaustive" | "simulated_annealing" | "nn_fallback"
-    distance_matrix: np.ndarray = field(repr=False)
-    infeasible_reason: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -111,7 +102,7 @@ def _run_single_qaoa(Q_matrix: np.ndarray, n_vars: int) -> Tuple[str, float, flo
         rng = np.random.default_rng()
 
         def energy(x: np.ndarray) -> float:
-            return float(x @ Q_matrix @ x)
+            return evaluate_qubo_energy(x, Q_matrix)
 
         for _ in range(N_RUNS * 4):
             x      = rng.integers(0, 2, size=n_vars).astype(np.float64)
@@ -145,7 +136,7 @@ def _run_single_qaoa(Q_matrix: np.ndarray, n_vars: int) -> Tuple[str, float, flo
 # Public solver
 # ---------------------------------------------------------------------------
 
-def solve_quantum(
+def _internal_solve_quantum(
     depot: Depot,
     customers: List[Customer],
     vehicle_config: VehicleConfig,
@@ -399,7 +390,7 @@ def _solve_clustered_quantum(
 
     for cl_idx, (cl, cl_cfg) in enumerate(zip(geo_clusters, cluster_configs)):
         ki  = cl_cfg.total_count   # vehicles dedicated to this cluster
-        res = solve_quantum(depot, cl, cl_cfg, bypass_clustering=True)
+        res = _internal_solve_quantum(depot, cl, cl_cfg, bypass_clustering=True)
 
         runtimes.append(res.runtime_s)
         objectives_best.append(res.objective_best)
@@ -568,3 +559,23 @@ def _nn_result(
 
 def _total_dist(routes: List[List[int]], matrix: np.ndarray) -> float:
     return sum(matrix[a][b] for r in routes for a, b in zip(r, r[1:]))
+
+
+class QAOASolver(BaseQuantumSolver):
+    def solve(
+        self,
+        depot: Depot,
+        customers: List[Customer],
+        vehicle_config: VehicleConfig,
+        bypass_clustering: bool = False,
+    ) -> QuantumResult:
+        return _internal_solve_quantum(depot, customers, vehicle_config, bypass_clustering)
+
+def solve_quantum(
+    depot: Depot,
+    customers: List[Customer],
+    vehicle_config: VehicleConfig,
+    bypass_clustering: bool = False,
+) -> QuantumResult:
+    return QAOASolver().solve(depot, customers, vehicle_config, bypass_clustering)
+

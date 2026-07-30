@@ -8,7 +8,7 @@ Stores the result in app.state.quantum_result.
 from fastapi import APIRouter, HTTPException, Request
 
 from app.services.emission import co2_emissions, fuel_consumption
-from app.services.qaoa_solver import solve_quantum
+from app.services.solver_factory import solve_quantum
 from app.utils.helpers import build_stats, routes_to_frontend
 
 router = APIRouter()
