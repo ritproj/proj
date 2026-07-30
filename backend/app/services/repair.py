@@ -168,8 +168,27 @@ def repair_routes(
                     best_cost, best_r, best_pos = cost, r_idx, pos
         if best_r >= 0:
             cleaned[best_r].insert(best_pos, node)
-        # If best_r < 0, the node cannot fit anywhere without violating capacity.
-        # We simply leave it unassigned. validate_routes() will flag it as unvisited.
+        else:
+            # No existing route can fit this customer without a capacity violation.
+            # Try to open a spare vehicle slot — any route that is currently [0, 0]
+            # (empty) and whose capacity can hold this customer.
+            opened = False
+            for r_idx, route in enumerate(cleaned):
+                if route == [0, 0] and demands[node] <= cap_for(r_idx) + 1e-6:
+                    cleaned[r_idx] = [0, node, 0]
+                    opened = True
+                    break
+            if not opened:
+                # Absolute last resort: insert into the least-loaded vehicle
+                # regardless of capacity. validate_routes() will flag it; the
+                # caller will then trigger the NN+2opt fallback. This is safer
+                # than silently leaving a customer unvisited.
+                least_r = min(
+                    range(len(cleaned)),
+                    key=lambda r: sum(demands.get(n, 0) for n in cleaned[r]),
+                )
+                insert_pos = len(cleaned[least_r]) - 1  # just before final depot
+                cleaned[least_r].insert(insert_pos, node)
 
     feasible, _ = validate_routes(cleaned, customers, capacities)
     return cleaned, feasible

@@ -286,7 +286,7 @@ export default function Dashboard() {
         <div className="flex items-start gap-2 text-yellow-300 text-sm bg-yellow-900/20
           border border-yellow-700/50 rounded-xl px-4 py-3">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
-          <span>Dataset will be clustered for quantum demo purposes (QAOA supports 4–8 customers per instance).</span>
+          <span>Large dataset — BQPhy will solve sub-clusters in parallel and merge routes.</span>
         </div>
       )}
 
@@ -296,8 +296,9 @@ export default function Dashboard() {
           border border-orange-700/50 rounded-xl px-4 py-3">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <span>
-            Fallback heuristic used — QAOA did not converge to a feasible route on this run.
-            Results may differ from optimal.
+            {quantumResult.method === 'bqphy'
+              ? 'BQPhy decoded an infeasible assignment — nearest-neighbour + 2-opt fallback was applied. Routes are feasible.'
+              : 'Fallback heuristic used — solver did not converge to a feasible route on this run. Results may differ from optimal.'}
           </span>
         </div>
       )}
@@ -337,8 +338,9 @@ export default function Dashboard() {
               {/* Quantum column */}
               <div className="bg-gray-900 border border-purple-900/50 rounded-2xl p-4 space-y-3">
                 <p className="text-purple-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                  <Atom size={11} /> Quantum
-                  {quantumResult.fallback_used && <span className="text-orange-400 text-xs font-normal">(fallback)</span>}
+                  <Atom size={11} />
+                  {quantumResult.method === 'bqphy' ? 'BQPhy Quantum-Inspired' : 'Quantum'}
+                  {quantumResult.fallback_used && <span className="text-orange-400 text-xs font-normal ml-1">(NN fallback)</span>}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {[
@@ -387,16 +389,21 @@ export default function Dashboard() {
               },
               {
                 label: 'Method',
-                value: quantumResult.method === 'exhaustive'
+                value: quantumResult.method === 'bqphy'
+                  ? 'BQPhy QIEO'
+                  : quantumResult.method === 'exhaustive'
                   ? 'Exhaustive'
                   : quantumResult.method === 'simulated_annealing'
                   ? 'Sim. Annealing'
                   : 'NN Fallback',
                 icon: Cpu,
-                color: quantumResult.method === 'exhaustive' ? 'text-green-400'
+                color: quantumResult.method === 'bqphy' ? 'text-teal-400'
+                  : quantumResult.method === 'exhaustive' ? 'text-green-400'
                   : quantumResult.method === 'simulated_annealing' ? 'text-yellow-400'
                   : 'text-orange-400',
-                sub: quantumResult.method === 'exhaustive'
+                sub: quantumResult.method === 'bqphy'
+                  ? 'BosonQ Psi quantum-inspired'
+                  : quantumResult.method === 'exhaustive'
                   ? 'exact (≤16 vars)'
                   : quantumResult.method === 'simulated_annealing'
                   ? 'heuristic'
@@ -494,6 +501,7 @@ export default function Dashboard() {
               classical={classicalResult?.stats}
               quantum={quantumResult?.stats}
               winner={comparisonResult?.winner}
+              quantumMethod={quantumResult?.method}
             />
           </div>
         </section>

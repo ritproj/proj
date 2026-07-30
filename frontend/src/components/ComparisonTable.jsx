@@ -9,8 +9,9 @@ import React from 'react'
  *   quantum   : { distance_km, fuel_l, co2_kg, runtime_s }
  *   winner    : "classical" | "quantum" | "tie" | null  — from /api/compare
  */
-export default function ComparisonTable({ classical, quantum, winner }) {
+export default function ComparisonTable({ classical, quantum, winner, quantumMethod }) {
   if (!classical && !quantum) return null
+  const qLabel = quantumMethod === 'bqphy' ? 'BQPhy' : 'Quantum'
 
   const fmt = (v, decimals = 2) =>
     v !== null && v !== undefined ? Number(v).toFixed(decimals) : '—'
@@ -70,7 +71,7 @@ export default function ComparisonTable({ classical, quantum, winner }) {
           <tr className="border-b border-gray-800">
             <th className="text-left   text-gray-500 font-semibold uppercase text-xs tracking-wider px-4 py-3">Metric</th>
             <th className="text-center text-blue-400  font-semibold uppercase text-xs tracking-wider px-4 py-3">Classical</th>
-            <th className="text-center text-green-400 font-semibold uppercase text-xs tracking-wider px-4 py-3">Quantum</th>
+            <th className="text-center text-green-400 font-semibold uppercase text-xs tracking-wider px-4 py-3">{qLabel}</th>
             <th className="text-center text-gray-500  font-semibold uppercase text-xs tracking-wider px-4 py-3">Δ (Q vs C)</th>
           </tr>
         </thead>
@@ -111,7 +112,9 @@ export default function ComparisonTable({ classical, quantum, winner }) {
           'text-yellow-400'
         }`}>
           <span className="text-gray-500 font-normal">Winner:</span>
-          <span className="capitalize font-semibold">{winner}</span>
+          <span className="capitalize font-semibold">
+            {winner === 'quantum' && quantumMethod === 'bqphy' ? 'BQPhy' : winner}
+          </span>
           {winner === 'tie' && <span className="text-gray-500 font-normal">(within 0.01 km)</span>}
         </div>
       )}

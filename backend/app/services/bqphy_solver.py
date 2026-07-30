@@ -161,6 +161,7 @@ def _bqphy_solve_direct(
     population  = getattr(config, "BQPHY_POPULATION",  200)
     generations = getattr(config, "BQPHY_GENERATIONS", 800)
     delta_theta = getattr(config, "BQPHY_DELTA_THETA",  0.12)
+    n_runs      = getattr(config, "BQPHY_RUNS", 3)   # multi-restart: best of N
 
     optimizer_cfg = {
         "numPopulation":            population,
@@ -170,24 +171,41 @@ def _bqphy_solve_direct(
         "typeOfOptimisation":       "BINARY",
         "populationInitialSeeding": False,
         "outputFilePath":           "bqphy_solver_output",
-        "generationLogging":        "noLogging",
+        "generationLogging":        getattr(config, "BQPHY_GEN_LOGGING", "noLogging"),
     }
 
     print(f"[BQPhy] Config: population={population}, generations={generations}, "
-          f"deltaTheta={delta_theta}")
+          f"deltaTheta={delta_theta}, runs={n_runs}")
     print(f"[BQPhy] Running quantum-inspired evolutionary optimization...")
 
     t0 = time.perf_counter()
-    optimizer = qea.BQPhy_OPTIMISER()
-    optimizer.initialize(optimizer_cfg)
-    optimizer.model(qubo_fitness)
-    optimizer.runOptimization()
-    best_vector, best_fitness = optimizer.getBestDesign()
-    rt = time.perf_counter() - t0
 
-    print(f"[BQPhy] Optimization complete.")
-    print(f"[BQPhy] Best QUBO energy: {best_fitness:.4f}")
-    print(f"[BQPhy] Optimization time: {rt:.3f}s")
+    best_vector:  Optional[np.ndarray] = None
+    best_fitness: float = float("inf")
+    all_fitnesses: List[float] = []
+
+    for run_idx in range(n_runs):
+        optimizer = qea.BQPhy_OPTIMISER()
+        optimizer.initialize(optimizer_cfg)
+        optimizer.model(qubo_fitness)
+        optimizer.runOptimization()
+        vec, fit = optimizer.getBestDesign()
+        fit = float(np.asarray(fit).flat[0])
+        vec = np.asarray(vec, dtype=np.float64).ravel()
+        all_fitnesses.append(fit)
+        print(f"[BQPhy] Run {run_idx + 1}/{n_runs} — QUBO energy: {fit:.4f}")
+        if fit < best_fitness:
+            best_fitness = fit
+            best_vector  = vec
+
+    rt = time.perf_counter() - t0
+    obj_mean = float(np.mean(all_fitnesses))
+    obj_var  = float(np.var(all_fitnesses))
+
+    print(f"[BQPhy] Optimization complete — best of {n_runs} runs.")
+    print(f"[BQPhy] Best QUBO energy : {best_fitness:.4f}")
+    print(f"[BQPhy] Mean QUBO energy : {obj_mean:.4f}  (variance: {obj_var:.4f})")
+    print(f"[BQPhy] Total time       : {rt:.3f}s")
 
     # ── Decode best binary vector → bitstring → routes ─────────────────────
     # BQPhy returns near-binary floats; round to exact 0/1.
@@ -242,10 +260,10 @@ def _bqphy_solve_direct(
         runtime_s=round(rt, 4),
         feasible=feasible,
         fallback_used=fallback_used,
-        objective_best=round(float(best_fitness), 4),
-        objective_mean=round(float(best_fitness), 4),
-        objective_variance=0.0,
-        runs=1,
+        objective_best=round(best_fitness, 4),
+        objective_mean=round(obj_mean, 4),
+        objective_variance=round(obj_var, 4),
+        runs=n_runs,
         n_vars=n_vars,
         method="bqphy",
         distance_matrix=dist_matrix,
