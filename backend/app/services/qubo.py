@@ -32,7 +32,10 @@ import numpy as np
 
 from app.models.customer import Customer
 
-PENALTY_MULTIPLIER: float = 10.0
+# Penalty multiplier — λ = PENALTY_MULTIPLIER × max_edge_km × N_customers.
+# Must be large enough that violating any constraint is always worse
+# than any improvement to the objective. Raised from 10 → 50.
+PENALTY_MULTIPLIER: float = 50.0
 
 QUBODict = Dict[Tuple[int, int], float]
 
@@ -81,12 +84,15 @@ def build_qubo(
         raise ValueError(f"capacities list length {len(capacities)} ≠ n_vehicles {K}")
 
     max_edge = float(np.max(distance_matrix))
-    penalty  = penalty_multiplier * max_edge if max_edge > 0 else penalty_multiplier
+    # Scale penalty by N so it stays dominant for large problems:
+    # even if every customer is saved by 2*max_edge, the constraint still wins.
+    penalty  = penalty_multiplier * max_edge * max(N, 1) if max_edge > 0 else penalty_multiplier
 
     n_vars   = variable_count(N, K)
     Q: QUBODict = {}
 
     demands = [c.demand for c in customers]   # 0-based customer index
+    max_demand = max(demands) if demands else 1.0  # for capacity scale normalisation
 
     def add(a: int, b: int, val: float) -> None:
         if abs(val) < 1e-12:
@@ -151,22 +157,24 @@ def build_qubo(
     #       - 2*Q_k * Σ_i d_i * y_i          (linear)
     #       + Q_k²                            (constant, ignored)
     #
-    # We scale by penalty/Q_k² to keep the penalty proportional to the
-    # fraction of capacity violated, not the absolute kg amount.
+    # Scale by penalty / max_demand² so the capacity penalty is always
+    # comparable to the assignment penalty, regardless of vehicle size.
+    # (Old: scale = penalty/Qk² — vanished for large Qk e.g. 9999 kg).
     # ------------------------------------------------------------------
+    cap_scale = penalty / (max_demand ** 2) if max_demand > 0 else penalty
+
     for k in range(K):
         Qk = capacities[k]
-        scale = penalty / (Qk * Qk) if Qk > 0 else penalty
 
         for i in range(N):
             v = _var(i, k, K)
             # diagonal: d_i² - 2*Q_k*d_i  (scaled)
-            add(v, v, scale * (demands[i] ** 2 - 2.0 * Qk * demands[i]))
+            add(v, v, cap_scale * (demands[i] ** 2 - 2.0 * Qk * demands[i]))
 
         for i in range(N):
             for j in range(i + 1, N):
                 vi = _var(i, k, K)
                 vj = _var(j, k, K)
-                add(vi, vj, scale * 2.0 * demands[i] * demands[j])
+                add(vi, vj, cap_scale * 2.0 * demands[i] * demands[j])
 
     return Q, n_vars, penalty
