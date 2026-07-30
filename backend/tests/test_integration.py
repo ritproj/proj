@@ -71,18 +71,23 @@ def test_full_pipeline_clustered():
     client = TestClient(app)
     client.post("/api/reset")
 
-    # Upload configuration with 10 customers (above limit 8)
+    # Upload configuration with 55 customers.
+    # With BQPHY_CUSTOMER_LIMIT=50 this triggers clustering_notice=True.
+    # With QAOA_CUSTOMER_LIMIT=8 it would also be True.
+    # Either way the backend must handle it without crashing.
     csv_data = "Customer_ID,Latitude,Longitude,Demand\n"
-    for i in range(1, 11):
-        csv_data += f"{i},12.9716,77.5946,10.0\n"
+    for i in range(1, 56):   # 55 customers
+        lat  = 12.9716 + (i * 0.001)   # unique coordinates to avoid k-means degeneracy
+        lon  = 77.5946 + (i * 0.001)
+        csv_data += f"{i},{lat},{lon},5.0\n"
 
     fleet = {
-        "Van": 3,
+        "Van": 10,
         "Truck": 0,
         "Bike": 0,
         "Electric Van": 0
     }
-    
+
     capacities = {
         "Van": 50.0,
         "Truck": 120.0,
@@ -98,7 +103,7 @@ def test_full_pipeline_clustered():
 
     response = client.post("/api/upload", files=files, data=data)
     assert response.status_code == 200
-    assert response.json()["customers"] == 10
+    assert response.json()["customers"] == 55
     assert response.json()["clustering_notice"] is True
 
     # Run Quantum optimization (should cluster into groups of <=8)

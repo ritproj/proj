@@ -157,11 +157,36 @@ def _bqphy_solve_direct(
     def qubo_fitness(x_batch: np.ndarray) -> np.ndarray:
         return np.sum((x_batch @ Q_matrix) * x_batch, axis=1)
 
-    # ── BQPhy configuration ─────────────────────────────────────────────────
-    population  = getattr(config, "BQPHY_POPULATION",  200)
-    generations = getattr(config, "BQPHY_GENERATIONS", 800)
-    delta_theta = getattr(config, "BQPHY_DELTA_THETA",  0.12)
-    n_runs      = getattr(config, "BQPHY_RUNS", 3)   # multi-restart: best of N
+    # ── BQPhy configuration — adaptive scaling based on problem size ───────────
+    # Base values from config
+    base_pop  = getattr(config, "BQPHY_POPULATION",  200)
+    base_gen  = getattr(config, "BQPHY_GENERATIONS", 800)
+    delta_theta = getattr(config, "BQPHY_DELTA_THETA", 0.12)
+    base_runs   = getattr(config, "BQPHY_RUNS", 3)
+
+    # Scale population and generations with problem size:
+    #   n_vars ≤ 30  : small   — base values, more restarts (5)
+    #   n_vars ≤ 100 : medium  — 1.5× population, 1.25× generations
+    #   n_vars ≤ 250 : large   — 2×  population, 1.5×  generations
+    #   n_vars >  250: xl      — 3×  population, 2×    generations
+    # More restarts on small problems (fast, so we run more for reliability).
+    # Fewer restarts on large problems (each run is expensive).
+    if n_vars <= 30:
+        population  = base_pop
+        generations = base_gen
+        n_runs      = min(base_runs + 2, 5)   # up to 5 restarts — fast anyway
+    elif n_vars <= 100:
+        population  = int(base_pop * 1.5)
+        generations = int(base_gen * 1.25)
+        n_runs      = base_runs                # 3 restarts
+    elif n_vars <= 250:
+        population  = int(base_pop * 2)
+        generations = int(base_gen * 1.5)
+        n_runs      = max(base_runs - 1, 1)   # 2 restarts
+    else:
+        population  = int(base_pop * 3)
+        generations = int(base_gen * 2)
+        n_runs      = 1                        # single run — each is thorough
 
     optimizer_cfg = {
         "numPopulation":            population,
@@ -174,9 +199,10 @@ def _bqphy_solve_direct(
         "generationLogging":        getattr(config, "BQPHY_GEN_LOGGING", "noLogging"),
     }
 
-    print(f"[BQPhy] Config: population={population}, generations={generations}, "
-          f"deltaTheta={delta_theta}, runs={n_runs}")
+    print(f"[BQPhy] Adaptive config: population={population}, generations={generations}, "
+          f"deltaTheta={delta_theta}, runs={n_runs}  [n_vars={n_vars}]")
     print(f"[BQPhy] Running quantum-inspired evolutionary optimization...")
+
 
     t0 = time.perf_counter()
 

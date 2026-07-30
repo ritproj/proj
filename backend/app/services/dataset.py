@@ -17,7 +17,14 @@ from sklearn.cluster import KMeans
 from app.models.customer import Customer
 
 REQUIRED_COLUMNS = {"Customer_ID", "Latitude", "Longitude", "Demand"}
-QUANTUM_CUSTOMER_LIMIT = 8  # max customers before clustering notice is triggered
+from app import config as _cfg
+
+def _customer_limit() -> int:
+    """Return the correct per-solver customer limit from config."""
+    backend = getattr(_cfg, "QUANTUM_SOLVER_BACKEND", "qaoa").lower()
+    if backend == "bqphy":
+        return getattr(_cfg, "BQPHY_CUSTOMER_LIMIT", 50)
+    return getattr(_cfg, "QAOA_CUSTOMER_LIMIT", 8)
 
 
 # ---------------------------------------------------------------------------
@@ -94,7 +101,7 @@ def parse_csv(contents: bytes) -> Tuple[List[Customer], bool]:
         for _, row in df.iterrows()
     ]
 
-    clustering_notice = len(customers) > QUANTUM_CUSTOMER_LIMIT
+    clustering_notice = len(customers) > _customer_limit()
     return customers, clustering_notice
 
 

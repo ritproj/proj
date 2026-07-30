@@ -22,21 +22,24 @@ ENABLE_LIVE_CLUSTERING: bool = True
 QUANTUM_SOLVER_BACKEND: str = "bqphy"
 
 # BQPhy specific hyperparameters
+# These are the base values for small problems (n_vars ≤ 30).
+# The solver auto-scales population and generations for larger problems.
 BQPHY_POPULATION: int = 200
 BQPHY_GENERATIONS: int = 800
 BQPHY_DELTA_THETA: float = 0.12
 
 # Maximum customers per direct BQPhy call before clustering kicks in.
-# BQPhy handles larger problems than the SA solver, so the ceiling is raised.
-# At N=16 customers and K=3 vehicles: 16×3=48 binary vars — well within reach.
-BQPHY_CUSTOMER_LIMIT: int = 16
+# BQPhy handles large QUBO matrices efficiently — 50 customers is well within reach.
+# At N=50 customers and K=4 vehicles: 50×4=200 binary vars — fully supported.
+BQPHY_CUSTOMER_LIMIT: int = 50
 
 # Hard cap on binary variables BQPhy will optimise directly.
-# At 128 vars: 8 customers × 16 vehicles or 16 customers × 8 vehicles.
-BQPHY_QUBIT_LIMIT: int = 128
+# Raised to 500: this covers 50 customers × 10 vehicles without clamping vehicles.
+BQPHY_QUBIT_LIMIT: int = 500
 
-# Number of independent BQPhy restarts — best result is kept (like SA's N_RUNS=5).
-# More runs = more reliable, but slower. 3 is a good hackathon balance.
+# Number of independent BQPhy restarts — best result is kept.
+# 3 restarts is reliable for small/medium problems.
+# The solver auto-increases this for small problems (fast runs).
 BQPHY_RUNS: int = 3
 
 # Set to "generationalLogging" to capture per-generation fitness CSV for convergence plots.
