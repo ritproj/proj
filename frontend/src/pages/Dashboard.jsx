@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
-  Users, Truck, Route, Fuel, Wind,
+  Users, Truck, Route, Fuel, Wind, Package,
   Play, Atom, GitCompare, RotateCcw, Loader2,
   AlertCircle, BarChart2, Activity, CheckCircle2,
-  AlertTriangle, Cpu, Hash,
+  AlertTriangle, Cpu, Hash, ChevronDown, ChevronUp, Trophy,
+  Zap, Info,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { runClassical, runQuantum, compareResults } from '../services/optimization'
@@ -14,6 +15,7 @@ import RouteMap from '../components/RouteMap'
 import ComparisonTable from '../components/ComparisonTable'
 import ResultChart from '../components/ResultChart'
 import ErrorBanner from '../components/ErrorBanner'
+import ConvergenceChart from '../components/ConvergenceChart'
 
 function Spinner() {
   return <Loader2 size={16} className="animate-spin" />
@@ -69,6 +71,10 @@ export default function Dashboard() {
     showClusteringNotice,
     reset,
   } = useApp()
+
+  const [bqphyExpanded, setBqphyExpanded] = useState(false)
+  // Which solver to show in route breakdown (independent of map tab)
+  const [routeTab, setRouteTab] = useState('quantum')
 
   useEffect(() => {
     if (!uploadedFile) navigate('/upload', { replace: true })
@@ -129,15 +135,28 @@ export default function Dashboard() {
 
   // ── Derived display data ──────────────────────────────────────────────────
 
-  const activeResult   = quantumResult ?? classicalResult
+  const activeResult = quantumResult ?? classicalResult
+
+  // Keep routeTab pointing at a result that actually exists
+  React.useEffect(() => {
+    if (routeTab === 'quantum' && !quantumResult && classicalResult) setRouteTab('classical')
+    if (routeTab === 'classical' && !classicalResult && quantumResult) setRouteTab('quantum')
+    if (quantumResult) setRouteTab('quantum')   // auto-switch when quantum arrives
+  }, [quantumResult, classicalResult]) // eslint-disable-line
+
   const { depot, customers } = useMemo(() => {
     const r = activeResult
     if (!r) return { depot: null, customers: [] }
     return { depot: r.depot ?? null, customers: r.customers ?? [] }
   }, [activeResult])
 
+  // Stats: always use whichever result exists (quantum preferred)
   const statsSource    = activeResult?.stats ?? null
-  const customerCount  = parsedCustomers.length || (statsSource?.customers ?? '—')
+  const hasAnyResult   = !!(classicalResult || quantumResult)
+  const customerCount  = parsedCustomers.length
+    || statsSource?.customers
+    || activeResult?.routes?.reduce((s, r) => s + r.filter(p => p.id != null).length, 0)
+    || '—'
 
   const savings  = comparisonResult?.savings ?? null
   const co2Saved =
@@ -272,14 +291,35 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── Auto-compare badge ── */}
-      {comparisonResult && !loading && (
-        <div className="flex items-center gap-2 text-green-400 text-sm bg-green-900/20
-          border border-green-700/40 rounded-xl px-4 py-2">
-          <CheckCircle2 size={15} className="shrink-0" />
-          <span>Comparison complete — winner: <strong>{comparisonResult.winner ?? 'N/A'}</strong></span>
-        </div>
-      )}
+      {/* ── Auto-compare banner ── */}
+      {comparisonResult && !loading && (() => {
+        const isQ = comparisonResult.winner === 'quantum'
+        const isTie = comparisonResult.winner === 'tie'
+        return (
+          <div className={`flex items-center gap-3 rounded-xl px-4 py-3 border
+            ${ isTie
+              ? 'text-yellow-300 bg-yellow-900/20 border-yellow-700/40'
+              : isQ
+              ? 'text-purple-300 bg-purple-900/20 border-purple-700/40'
+              : 'text-blue-300 bg-blue-900/20 border-blue-700/40'
+            }`}
+            style={{ boxShadow: isTie ? 'none' : `0 0 20px ${isQ ? 'rgba(168,85,247,0.12)' : 'rgba(59,130,246,0.12)'}` }}
+          >
+            <Trophy size={18} className="text-yellow-400 shrink-0" />
+            <div>
+              <span className="font-semibold">Comparison complete</span>
+              <span className="text-sm ml-2 opacity-80">
+                Winner: <strong className="capitalize">{comparisonResult.winner ?? 'N/A'}</strong>
+              </span>
+            </div>
+            {!isTie && (
+              <span className="ml-auto text-xs opacity-60">
+                {isQ ? 'Quantum' : 'Classical'} had the shorter distance
+              </span>
+            )}
+          </div>
+        )
+      })()}
 
       {/* ── Clustering notice ── */}
       {showClusteringNotice && (
@@ -306,79 +346,87 @@ export default function Dashboard() {
       {/* ── Error banner ── */}
       <ErrorBanner message={error} onDismiss={() => setError(null)} />
 
-      {/* ── Statistics — side-by-side when both solvers ran ── */}
-      {(statsSource || parsedCustomers.length > 0) && (
-        <section>
-          <h2 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">Statistics</h2>
-          {classicalResult && quantumResult ? (
-            /* Both ran — show two columns */
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Classical column */}
-              <div className="bg-gray-900 border border-blue-900/50 rounded-2xl p-4 space-y-3">
-                <p className="text-blue-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                  <Play size={11} /> Classical
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { label: 'Distance', value: classicalResult.stats?.distance_km, unit: 'km' },
-                    { label: 'Fuel',     value: classicalResult.stats?.fuel_l,      unit: 'L'  },
-                    { label: 'CO₂',      value: classicalResult.stats?.co2_kg,      unit: 'kg' },
-                    { label: 'Routes',   value: classicalResult.routes?.length                  },
-                    { label: 'Runtime',  value: classicalResult.stats?.runtime_s,   unit: 's'  },
-                  ].map(({ label, value, unit }) => (
-                    <div key={label} className="text-center">
-                      <p className="text-gray-600 text-xs">{label}</p>
-                      <p className="text-white text-sm font-bold leading-snug">
-                        {value ?? '—'}{unit && value != null ? <span className="text-gray-500 text-xs font-normal"> {unit}</span> : ''}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {/* Quantum column */}
-              <div className="bg-gray-900 border border-purple-900/50 rounded-2xl p-4 space-y-3">
-                <p className="text-purple-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                  <Atom size={11} />
-                  {quantumResult.method === 'bqphy' ? 'BQPhy Quantum-Inspired' : 'Quantum'}
-                  {quantumResult.fallback_used && <span className="text-orange-400 text-xs font-normal ml-1">(NN fallback)</span>}
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { label: 'Distance', value: quantumResult.stats?.distance_km, unit: 'km' },
-                    { label: 'Fuel',     value: quantumResult.stats?.fuel_l,      unit: 'L'  },
-                    { label: 'CO₂',      value: quantumResult.stats?.co2_kg,      unit: 'kg' },
-                    { label: 'Routes',   value: quantumResult.routes?.length                  },
-                    { label: 'Runtime',  value: quantumResult.stats?.runtime_s,   unit: 's'  },
-                  ].map(({ label, value, unit }) => (
-                    <div key={label} className="text-center">
-                      <p className="text-gray-600 text-xs">{label}</p>
-                      <p className="text-white text-sm font-bold leading-snug">
-                        {value ?? '—'}{unit && value != null ? <span className="text-gray-500 text-xs font-normal"> {unit}</span> : ''}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+      {/* ── Statistics ── */}
+      <section>
+        <h2 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">Statistics</h2>
+        
+        {/* Top-row summary cards — ALWAYS visible once a file is uploaded */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <StatsCard label="Customers"    value={customerCount} icon={Users}    color="text-blue-400" />
+          <StatsCard label="Vehicles"     value={Object.values(vehicleConfig?.fleet ?? {}).reduce((s, n) => s + n, 0)} icon={Truck} color="text-purple-400" />
+          <StatsCard label="Total Demand" value={parsedCustomers.reduce((s, c) => s + (parseFloat(c.Demand ?? c.demand) || 0), 0).toFixed(0)} unit="kg" icon={Package}  color="text-yellow-400" />
+          <StatsCard label="Fleet Util."  value={fleetCheck?.utilization_pct ? `${fleetCheck.utilization_pct}%` : '—'} icon={Activity} color="text-green-400" />
+        </div>
+
+        {/* Solver-specific stats */}
+        {hasAnyResult && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Classical column */}
+            <div
+              className="bg-gray-900 border rounded-2xl p-4 space-y-3 transition-all duration-300"
+              style={{
+                borderColor: comparisonResult?.winner === 'classical' ? 'rgba(59,130,246,0.6)' : 'rgba(30,58,138,0.4)',
+                boxShadow: comparisonResult?.winner === 'classical' ? '0 0 20px rgba(59,130,246,0.12)' : 'none',
+              }}
+            >
+              <p className="text-blue-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                <Play size={11} /> Classical
+                {comparisonResult?.winner === 'classical' && <Trophy size={11} className="text-yellow-400 ml-1" />}
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: 'Distance', value: classicalResult?.stats?.distance_km, unit: 'km' },
+                  { label: 'Fuel',     value: classicalResult?.stats?.fuel_l,      unit: 'L'  },
+                  { label: 'CO₂',      value: classicalResult?.stats?.co2_kg,      unit: 'kg' },
+                ].map(({ label, value, unit }) => (
+                  <div key={label} className="text-center">
+                    <p className="text-gray-600 text-xs">{label}</p>
+                    <p className="text-white text-sm font-bold leading-snug">
+                      {value ?? '—'}{unit && value != null ? <span className="text-gray-500 text-xs font-normal"> {unit}</span> : ''}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
-          ) : (
-            /* Single solver — classic card row */
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              <StatsCard label="Customers"  value={customerCount}                    icon={Users}  color="text-blue-400" />
-              <StatsCard label="Vehicles"   value={statsSource?.vehicles ?? Object.values(vehicleConfig?.fleet ?? {}).reduce((s, n) => s + n, 0)} icon={Truck}  color="text-purple-400" />
-              <StatsCard label="Distance"   value={statsSource?.distance_km ?? '—'}  unit="km"     icon={Route} color="text-yellow-400" />
-              <StatsCard label="Fuel"       value={statsSource?.fuel_l      ?? '—'}  unit="L"      icon={Fuel}  color="text-orange-400" />
-              <StatsCard label="CO₂"        value={statsSource?.co2_kg      ?? '—'}  unit="kg"     icon={Wind}  color="text-green-400" />
+
+            {/* Quantum column */}
+            <div
+              className="bg-gray-900 border rounded-2xl p-4 space-y-3 transition-all duration-300"
+              style={{
+                borderColor: comparisonResult?.winner === 'quantum' ? 'rgba(168,85,247,0.6)' : 'rgba(88,28,135,0.4)',
+                boxShadow: comparisonResult?.winner === 'quantum' ? '0 0 20px rgba(168,85,247,0.12)' : 'none',
+              }}
+            >
+              <p className="text-purple-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                <Atom size={11} />
+                {quantumResult?.method === 'bqphy' ? 'BQPhy Quantum-Inspired' : 'Quantum'}
+                {comparisonResult?.winner === 'quantum' && <Trophy size={11} className="text-yellow-400 ml-1" />}
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: 'Distance', value: quantumResult?.stats?.distance_km, unit: 'km' },
+                  { label: 'Fuel',     value: quantumResult?.stats?.fuel_l,      unit: 'L'  },
+                  { label: 'CO₂',      value: quantumResult?.stats?.co2_kg,      unit: 'kg' },
+                ].map(({ label, value, unit }) => (
+                  <div key={label} className="text-center">
+                    <p className="text-gray-600 text-xs">{label}</p>
+                    <p className="text-white text-sm font-bold leading-snug">
+                      {value ?? '—'}{unit && value != null ? <span className="text-gray-500 text-xs font-normal"> {unit}</span> : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
-        </section>
-      )}
+          </div>
+        )}
+      </section>
 
       {/* ── QUBO info panel ── */}
       {quantumResult && (
         <section>
           <h2 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">QUBO Solver Info</h2>
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5
-            grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               {
                 label: 'Variables',
@@ -402,7 +450,7 @@ export default function Dashboard() {
                   : quantumResult.method === 'simulated_annealing' ? 'text-yellow-400'
                   : 'text-orange-400',
                 sub: quantumResult.method === 'bqphy'
-                  ? 'BosonQ Psi quantum-inspired'
+                  ? 'Evolutionary QUBO search'
                   : quantumResult.method === 'exhaustive'
                   ? 'exact (≤16 vars)'
                   : quantumResult.method === 'simulated_annealing'
@@ -437,7 +485,58 @@ export default function Dashboard() {
                 <span className="text-gray-600 text-xs">{sub}</span>
               </div>
             ))}
+            </div>
+
+            {/* What is BQPhy? expandable */}
+            {quantumResult.method === 'bqphy' && (
+              <div className="border-t border-gray-800 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setBqphyExpanded(e => !e)}
+                  className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-xs font-medium transition-colors"
+                >
+                  <Info size={13} />
+                  What is BQPhy?
+                  {bqphyExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                </button>
+                {bqphyExpanded && (
+                  <div className="mt-2 bg-purple-900/10 border border-purple-700/20 rounded-xl px-4 py-3 text-gray-400 text-xs leading-relaxed">
+                    <p className="mb-2">
+                      <strong className="text-purple-300">BQPhy QIEO</strong> (Quantum-Inspired Evolutionary Optimizer)
+                      is a population-based search algorithm that optimizes binary vectors by simulating quantum
+                      superposition and interference effects mathematically — without requiring quantum hardware.
+                    </p>
+                    <p className="mb-2">
+                      The CVRP is encoded as a{' '}
+                      <strong className="text-white">QUBO matrix Q</strong> with{' '}
+                      <span className="font-mono text-purple-300">{quantumResult.n_vars}</span> binary
+                      variables y[i,k] = 1 if customer i is assigned to vehicle k.
+                      BQPhy minimizes <span className="font-mono text-purple-300">xᵀQx</span>
+                      — the exact same objective a QAOA circuit would target.
+                    </p>
+                    <p>
+                      The best binary solution across{' '}
+                      <strong className="text-white">{quantumResult.runs ?? 3} independent restarts</strong>{' '}
+                      (QUBO energy = <span className="font-mono text-green-400">{quantumResult.objective_best?.toFixed(2)}</span>)
+                      is decoded into vehicle assignments and post-processed with
+                      Or-opt and 2-opt local search for route quality.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+        </section>
+      )}
+
+      {/* ── Convergence Chart ── */}
+      {quantumResult?.convergence_data?.length > 0 && (
+        <section>
+          <ConvergenceChart
+            convergenceData={quantumResult.convergence_data}
+            method={quantumResult.method}
+            nVars={quantumResult.n_vars}
+          />
         </section>
       )}
 
@@ -460,33 +559,73 @@ export default function Dashboard() {
       )}
 
       {/* ── Per-route breakdown table ── */}
-      {(() => {
-        const activeResult = quantumResult ?? classicalResult
-        const routeMeta = activeResult?.route_meta ?? []
-        if (routeMeta.length === 0) return null
-        const label = quantumResult ? 'quantum' : 'classical'
+      {(classicalResult?.route_meta?.length > 0 || quantumResult?.route_meta?.length > 0) && (() => {
+        // Determine which result to show based on routeTab
+        const breakdownResult = routeTab === 'classical' ? classicalResult : quantumResult
+        const routeMeta = breakdownResult?.route_meta ?? []
+        const hasBothResults = !!(classicalResult?.route_meta?.length && quantumResult?.route_meta?.length)
+
         return (
           <section>
-            <h2 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">
-              Route Breakdown
-              <span className="ml-2 text-gray-600 normal-case font-normal">({label})</span>
-            </h2>
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-800">
-                    {['Vehicle', 'Stops', 'Distance', 'Load', 'Utilisation'].map(h => (
-                      <th key={h} className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-3">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {routeMeta.map((meta, idx) => (
-                    <RouteRow key={idx} idx={idx} meta={meta} />
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-gray-500 text-xs font-semibold uppercase tracking-wider">
+                Route Breakdown
+              </h2>
+              {/* Toggle only shown when both solvers have results */}
+              {hasBothResults && (
+                <div className="flex gap-1 bg-gray-800 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setRouteTab('quantum')}
+                    className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
+                      routeTab === 'quantum'
+                        ? 'bg-purple-700 text-white'
+                        : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                  >
+                    ⚛ Quantum
+                  </button>
+                  <button
+                    onClick={() => setRouteTab('classical')}
+                    className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
+                      routeTab === 'classical'
+                        ? 'bg-blue-700 text-white'
+                        : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                  >
+                    ▶ Classical
+                  </button>
+                </div>
+              )}
+              {!hasBothResults && (
+                <span className={`text-xs font-semibold ${
+                  routeTab === 'quantum' ? 'text-purple-400' : 'text-blue-400'
+                }`}>
+                  {routeTab === 'quantum' ? '⚛ Quantum' : '▶ Classical'}
+                </span>
+              )}
             </div>
+            {routeMeta.length === 0 ? (
+              <div className="text-center text-gray-600 text-sm py-6">
+                No route data for {routeTab} solver yet.
+              </div>
+            ) : (
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-800">
+                      {['Vehicle', 'Stops', 'Distance', 'Load', 'Utilisation'].map(h => (
+                        <th key={h} className="text-left text-gray-500 text-xs font-semibold uppercase tracking-wider px-4 py-3">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {routeMeta.map((meta, idx) => (
+                      <RouteRow key={idx} idx={idx} meta={meta} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
         )
       })()}

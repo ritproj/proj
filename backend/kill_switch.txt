@@ -1,0 +1,3 @@
+# Control file
+# Set kill:1 to stop simulation
+kill:0

@@ -1,0 +1,205 @@
+{
+  "depot": {
+    "lat": 11.0168,
+    "lng": 76.9558
+  },
+  "customers": [
+    {
+      "id": 1,
+      "lat": 12.9716,
+      "lng": 77.5946,
+      "demand": 20.0
+    },
+    {
+      "id": 2,
+      "lat": 12.9716,
+      "lng": 77.5946,
+      "demand": 21.0
+    },
+    {
+      "id": 3,
+      "lat": 12.9716,
+      "lng": 77.5946,
+      "demand": 23.0
+    },
+    {
+      "id": 4,
+      "lat": 12.9716,
+      "lng": 77.5946,
+      "demand": 24.0
+    },
+    {
+      "id": 5,
+      "lat": 12.9716,
+      "lng": 77.5946,
+      "demand": 26.0
+    },
+    {
+      "id": 6,
+      "lat": 12.9716,
+      "lng": 77.5946,
+      "demand": 9.0
+    },
+    {
+      "id": 7,
+      "lat": 12.9716,
+      "lng": 77.5946,
+      "demand": 9.0
+    },
+    {
+      "id": 8,
+      "lat": 12.9716,
+      "lng": 77.5946,
+      "demand": 9.0
+    },
+    {
+      "id": 9,
+      "lat": 12.9716,
+      "lng": 77.5946,
+      "demand": 0.001
+    }
+  ],
+  "routes": [
+    [
+      {
+        "lat": 11.0168,
+        "lng": 76.9558,
+        "id": null,
+        "demand": null
+      },
+      {
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "id": 1,
+        "demand": 20.0
+      },
+      {
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "id": 2,
+        "demand": 21.0
+      },
+      {
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "id": 6,
+        "demand": 9.0
+      },
+      {
+        "lat": 11.0168,
+        "lng": 76.9558,
+        "id": null,
+        "demand": null
+      }
+    ],
+    [
+      {
+        "lat": 11.0168,
+        "lng": 76.9558,
+        "id": null,
+        "demand": null
+      },
+      {
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "id": 3,
+        "demand": 23.0
+      },
+      {
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "id": 4,
+        "demand": 24.0
+      },
+      {
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "id": 9,
+        "demand": 0.001
+      },
+      {
+        "lat": 11.0168,
+        "lng": 76.9558,
+        "id": null,
+        "demand": null
+      }
+    ],
+    [
+      {
+        "lat": 11.0168,
+        "lng": 76.9558,
+        "id": null,
+        "demand": null
+      },
+      {
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "id": 5,
+        "demand": 26.0
+      },
+      {
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "id": 7,
+        "demand": 9.0
+      },
+      {
+        "lat": 12.9716,
+        "lng": 77.5946,
+        "id": 8,
+        "demand": 9.0
+      },
+      {
+        "lat": 11.0168,
+        "lng": 76.9558,
+        "id": null,
+        "demand": null
+      }
+    ]
+  ],
+  "route_meta": [
+    {
+      "vehicle": 1,
+      "type": "Van",
+      "stops": 3,
+      "load_kg": 50.0,
+      "capacity_kg": 50.0,
+      "load_pct": 100.0,
+      "distance_km": 456.395
+    },
+    {
+      "vehicle": 2,
+      "type": "Van",
+      "stops": 3,
+      "load_kg": 47.0,
+      "capacity_kg": 50.0,
+      "load_pct": 94.0,
+      "distance_km": 456.395
+    },
+    {
+      "vehicle": 3,
+      "type": "Van",
+      "stops": 3,
+      "load_kg": 44.0,
+      "capacity_kg": 50.0,
+      "load_pct": 88.0,
+      "distance_km": 456.395
+    }
+  ],
+  "stats": {
+    "customers": 9,
+    "vehicles": 3,
+    "distance_km": 1369.18,
+    "fuel_l": 150.61,
+    "co2_kg": 347.91,
+    "runtime_s": 0.1218
+  },
+  "feasible": true,
+  "fallback_used": true,
+  "objective_best": -52853.0192,
+  "objective_mean": -52020.5602,
+  "objective_variance": 602162.9264,
+  "runs": 5,
+  "n_vars": 18,
+  "method": "simulated_annealing"
+}

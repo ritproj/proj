@@ -14,8 +14,29 @@ L.Icon.Default.mergeOptions({
   shadowUrl:     markerShadow,
 })
 
-// Vehicle route colours (Blue, Green, Orange, Purple, Pink)
-const ROUTE_COLORS = ['#3b82f6', '#22c55e', '#f97316', '#a855f7', '#ec4899']
+// Vehicle route colours — 20 visually distinct colors, enough for 100-customer datasets
+const ROUTE_COLORS = [
+  '#3b82f6', // blue
+  '#22c55e', // green
+  '#f97316', // orange
+  '#a855f7', // purple
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+  '#eab308', // yellow
+  '#ef4444', // red
+  '#84cc16', // lime
+  '#14b8a6', // teal
+  '#f43f5e', // rose
+  '#8b5cf6', // violet
+  '#fb923c', // light-orange
+  '#34d399', // emerald
+  '#60a5fa', // light-blue
+  '#c084fc', // lavender
+  '#fdba74', // peach
+  '#4ade80', // light-green
+  '#f472b6', // light-pink
+  '#38bdf8', // sky
+]
 
 function vehicleIcon(color) {
   return L.divIcon({
@@ -79,17 +100,34 @@ export default function RouteMap({
   quantumResult   = null,
 }) {
   const hasBoth = classicalResult?.routes?.length > 0 && quantumResult?.routes?.length > 0
-  const [tab, setTab] = useState('quantum')   // 'classical' | 'quantum' | 'both'
+  const hasAny  = classicalResult?.routes?.length > 0 || quantumResult?.routes?.length > 0
+
+  // Default tab: match whichever solver ran; if both ran start on 'quantum'
+  const defaultTab = quantumResult ? 'quantum' : 'classical'
+  const [tab, setTab] = useState(defaultTab)
+
+  // Keep tab in sync when a new result arrives for the first time
+  const prevHasBoth = React.useRef(hasBoth)
+  React.useEffect(() => {
+    if (!prevHasBoth.current && hasBoth) {
+      // both just became available — stay on quantum
+      setTab('quantum')
+    } else if (!hasBoth && quantumResult && tab === 'classical') {
+      setTab('quantum')
+    } else if (!hasBoth && !quantumResult && classicalResult) {
+      setTab('classical')
+    }
+    prevHasBoth.current = hasBoth
+  }, [hasBoth, quantumResult, classicalResult]) // eslint-disable-line
 
   // Resolve which routes to display
   const activeRoutes = useMemo(() => {
     if (legacyRoutes) return legacyRoutes          // legacy fallback
-    if (!hasBoth) {
-      return (quantumResult ?? classicalResult)?.routes ?? []
-    }
-    if (tab === 'both')      return null            // handled separately
+    if (tab === 'both' && hasBoth) return null     // handled separately
     if (tab === 'quantum')   return quantumResult?.routes  ?? []
-    return classicalResult?.routes ?? []
+    if (tab === 'classical') return classicalResult?.routes ?? []
+    // fallback: whichever ran
+    return (quantumResult ?? classicalResult)?.routes ?? []
   }, [legacyRoutes, hasBoth, tab, classicalResult, quantumResult])
 
   const center = useMemo(() => {
@@ -125,14 +163,14 @@ export default function RouteMap({
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
 
-      {/* ── Tab bar (only shown when both solvers ran) ── */}
-      {hasBoth && (
+      {/* ── Tab bar — shown whenever at least one solver ran ── */}
+      {hasAny && (
         <div className="flex border-b border-gray-800 bg-gray-900/80 px-4 pt-3 gap-1">
           {[
-            { key: 'quantum',   label: 'Quantum',   color: 'text-purple-400' },
-            { key: 'classical', label: 'Classical', color: 'text-blue-400'   },
-            { key: 'both',      label: 'Both',      color: 'text-green-400'  },
-          ].map(({ key, label, color }) => (
+            quantumResult   && { key: 'quantum',   label: 'Quantum',   color: 'text-purple-400' },
+            classicalResult && { key: 'classical', label: 'Classical', color: 'text-blue-400'   },
+            hasBoth         && { key: 'both',      label: 'Both',      color: 'text-green-400'  },
+          ].filter(Boolean).map(({ key, label, color }) => (
             <button
               key={key}
               onClick={() => setTab(key)}

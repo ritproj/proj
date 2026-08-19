@@ -18,3 +18,4 @@ class QuantumResult:
     method: str   # "exhaustive" | "simulated_annealing" | "nn_fallback" | "bqphy"
     distance_matrix: np.ndarray = field(repr=False)
     infeasible_reason: Optional[str] = None
+    convergence_data: Optional[List[float]] = None  # per-run QUBO energies for convergence chart

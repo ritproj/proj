@@ -5,7 +5,15 @@ import UploadBox from '../components/UploadBox'
 import { useApp, DEFAULT_VEHICLE_CONFIG } from '../context/AppContext'
 import { uploadDataset } from '../services/optimization'
 
-const SAMPLE_CSV = `Customer_ID,Latitude,Longitude,Demand
+// ── Demo presets ───────────────────────────────────────────────────────────
+const DEMO_PRESETS = [
+  {
+    id: 'small',
+    label: 'Small (8 customers)',
+    desc: 'Quantum-win dataset · 2× Van @ 68 kg',
+    fleet: { Van: 2, Truck: 0, Bike: 0, 'Electric Van': 0 },
+    capacities: { Van: 68, Truck: 120, Bike: 15, 'Electric Van': 60 },
+    csv: `Customer_ID,Latitude,Longitude,Demand
 1,11.0174,76.9198,10
 2,10.9825,76.9351,19
 3,10.9666,76.9689,20
@@ -14,7 +22,54 @@ const SAMPLE_CSV = `Customer_ID,Latitude,Longitude,Demand
 6,11.0115,76.9859,18
 7,11.0061,76.9120,17
 8,10.9980,76.9690,10
-`
+`,
+  },
+  {
+    id: 'medium',
+    label: 'Medium (15 customers)',
+    desc: 'Clustered BQPhy demo · 3× Van @ 75 kg',
+    fleet: { Van: 3, Truck: 0, Bike: 0, 'Electric Van': 0 },
+    capacities: { Van: 75, Truck: 120, Bike: 15, 'Electric Van': 60 },
+    csv: `Customer_ID,Latitude,Longitude,Demand
+1,11.0174,76.9198,10
+2,10.9825,76.9351,19
+3,10.9666,76.9689,20
+4,11.0376,76.9826,18
+5,11.0051,76.9811,11
+6,11.0115,76.9859,18
+7,11.0061,76.9120,17
+8,10.9980,76.9690,10
+9,11.0250,76.9500,14
+10,11.0050,76.9200,12
+11,10.9900,76.9750,16
+12,11.0300,76.9650,11
+13,10.9750,76.9400,13
+14,11.0150,76.9350,15
+15,11.0000,76.9600,10
+`,
+  },
+  {
+    id: 'mixed',
+    label: 'Mixed Fleet (10 customers)',
+    desc: 'Van + Electric Van + Bike combo',
+    fleet: { Van: 1, Truck: 0, Bike: 1, 'Electric Van': 1 },
+    capacities: { Van: 60, Truck: 120, Bike: 15, 'Electric Van': 60 },
+    csv: `Customer_ID,Latitude,Longitude,Demand
+1,11.0174,76.9198,8
+2,10.9825,76.9351,12
+3,10.9666,76.9689,10
+4,11.0376,76.9826,5
+5,11.0051,76.9811,7
+6,11.0115,76.9859,9
+7,11.0061,76.9120,11
+8,10.9980,76.9690,6
+9,11.0250,76.9500,8
+10,11.0050,76.9200,4
+`,
+  },
+]
+
+const SAMPLE_CSV = DEMO_PRESETS[0].csv
 
 // Recommended fleet for this sample: 2× Van @ 68 kg
 // Total demand = 123 kg, fleet capacity = 136 kg (utilisation ~90%)
@@ -94,6 +149,31 @@ export default function Upload() {
     setPendingCluster(clusterNotice); setCsvError(null)
   }
 
+  function loadPreset(preset) {
+    // Parse CSV rows
+    const lines = preset.csv.trim().split('\n')
+    const headers = lines[0].split(',')
+    const rows = lines.slice(1).map(line => {
+      const vals = line.split(',')
+      const obj = {}
+      headers.forEach((h, i) => { obj[h.trim()] = vals[i]?.trim() })
+      return obj
+    })
+    // Create a File object from the CSV string
+    const blob = new Blob([preset.csv], { type: 'text/csv' })
+    const file = new File([blob], `${preset.id}_demo.csv`, { type: 'text/csv' })
+    setPendingFile(file)
+    setPendingRows(rows)
+    setPendingCluster(rows.length > 50)
+    setCsvError(null)
+    setSubmitError(null)
+    // Update fleet config
+    setVehicleConfig({ fleet: preset.fleet, capacities: preset.capacities })
+    setCapStrings(
+      Object.fromEntries(Object.entries(preset.capacities).map(([k, v]) => [k, String(v)]))
+    )
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (!pendingFile)         { setCsvError('Please select a CSV file.'); return }
@@ -118,7 +198,30 @@ export default function Upload() {
   return (
     <div className="max-w-xl mx-auto px-4 py-12">
       <h1 className="text-2xl font-bold text-white mb-1">Upload Dataset</h1>
-      <p className="text-gray-400 text-sm mb-8">Provide your CSV and configure the fleet.</p>
+      <p className="text-gray-400 text-sm mb-6">Provide your CSV and configure the fleet.</p>
+
+      {/* ── Demo Presets ── */}
+      <div className="mb-6">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Quick Demo</p>
+        <div className="grid grid-cols-3 gap-2">
+          {DEMO_PRESETS.map(preset => (
+            <button
+              key={preset.id}
+              id={`preset-${preset.id}`}
+              type="button"
+              onClick={() => loadPreset(preset)}
+              className={`text-left border rounded-xl px-3 py-2.5 transition-all duration-150 group
+                ${ pendingFile?.name === `${preset.id}_demo.csv`
+                  ? 'bg-green-900/30 border-green-700/60 text-green-300'
+                  : 'bg-gray-900 border-gray-700 hover:border-green-700/50 hover:bg-gray-800 text-gray-300 hover:text-white'
+                }`}
+            >
+              <p className="text-xs font-semibold leading-tight">{preset.label}</p>
+              <p className="text-gray-500 text-xs mt-0.5 leading-tight group-hover:text-gray-400">{preset.desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -144,7 +247,7 @@ export default function Upload() {
           {pendingCluster && !csvError && (
             <div className="flex items-start gap-2 text-yellow-300 text-sm bg-yellow-900/20 border border-yellow-700/50 rounded-lg px-3 py-2">
               <Info size={15} className="mt-0.5 shrink-0" />
-              <span>Dataset will be clustered for quantum demo (QAOA supports 4–8 customers per instance).</span>
+              <span>Large dataset — BQPhy supports up to 50 customers directly; above that, k-means clustering splits into sub-groups solved in parallel.</span>
             </div>
           )}
           {pendingRows.length > 0 && !csvError && (

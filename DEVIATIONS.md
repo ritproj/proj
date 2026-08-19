@@ -32,7 +32,7 @@ for NISQ-era CVRP QUBO demos.
 
 ---
 
-### 2. QAOA Circuit Replaced with QUBO Simulated Annealing (SA)
+### 2. QAOA Circuit Replaced with QUBO Quantum-Inspired Solver (BQPhy)
 
 **Spec (Step 6.1)**
 ```
@@ -42,24 +42,21 @@ Primitive: Qiskit Sampler
 ```
 
 **Implemented**  
-The QUBO is solved using **Simulated Annealing** (SA) with numpy — no Qiskit circuit is run.
+The QUBO is solved using **BQPhy** — a custom quantum-inspired evolutionary optimizer — as the primary solver. No Qiskit circuit is run.
+
+For completeness, the solver pipeline is tiered by problem size (`bqphy_solver.py` / `qaoa_solver.py`):
+- **BQPhy** (primary, `QUANTUM_SOLVER_BACKEND="bqphy"` in `config.py`): evolutionary optimizer on the QUBO matrix; handles up to 50 customers / 500 binary variables.
+- **Exhaustive enumeration** (≤16 variables): exact global optimum via full bitstring search.
+- **Simulated Annealing** (17–24 variables): N_RUNS=5 independent restarts on the same QUBO.
+- **NN + 2-opt fallback** (>BQPHY_CUSTOMER_LIMIT or >BQPHY_QUBIT_LIMIT): classical nearest-neighbour with 2-opt improvement; `fallback_used=True` reported.
 
 **Reason**  
-`qiskit_algorithms 0.4.0` + `qiskit 2.5.0` (installed versions) have a `PauliEvolutionGate`
-incompatibility that causes every sampler to either:
-- Raise `TypeError: Invalid circuits, expected Sequence[QuantumCircuit]` (AerSampler v1)
-- Raise `AerError: unknown instruction: QAOA` (AerSamplerV2, BackendSamplerV2)
-- Hit `SUPERLU_MALLOC` memory failure (StatevectorSampler at ≥12 qubits)
-
-SA on the same QUBO matrix is mathematically equivalent to what QAOA optimises — it minimises
-`x^T Q x` over binary vectors. For demo and academic purposes the QUBO formulation (the
-quantum-inspired component) is the key deliverable; the circuit execution layer can be
-upgraded to real QAOA when compatible package versions are available.
+Qiskit QAOA was blocked by a `PauliEvolutionGate` incompatibility across all tested version combinations. BQPhy was developed as a purpose-built quantum-inspired replacement that optimises the identical `x^T Q x` QUBO objective via a population-based evolutionary search — mathematically equivalent to what QAOA targets, without requiring quantum hardware or Qiskit dependencies. For demo and academic purposes the QUBO formulation remains the core quantum-computing contribution.
 
 **What still works**
 - QUBO is correctly built with all constraint terms (H_distance, H_assign, H_capacity)
-- SA finds a low-energy bitstring that is decoded into routes
-- Multi-run structure is preserved (N_RUNS × 2 SA restarts)
+- BQPhy (and SA fallback) find low-energy bitstrings that are decoded into routes
+- Multi-run structure is preserved (`BQPHY_RUNS = 3` independent restarts)
 - `fallback_used`, `feasible`, `runs`, `objective_best/mean` are all reported correctly
 
 ---
@@ -84,7 +81,7 @@ which cannot produce a subtour by construction.
 
 ---
 
-### 4. Multi-Run SA Implementation (Replaces QAOA Spec)
+### 4. Multi-Run BQPhy Implementation (Replaces QAOA Spec)
 
 **Spec (Step 6.3)**
 ```
@@ -93,10 +90,10 @@ Report: mean, best, and variance of objective value
 ```
 
 **Implemented**
-The QUBO solver now performs `N_RUNS = 5` independent Simulated Annealing runs. The best solution is selected, and `objective_mean`, `objective_variance`, and `runs` (reported as `5`) are provided, matching the original multi‑run reporting expectations.
+The BQPhy solver performs `BQPHY_RUNS = 3` independent evolutionary restarts. The best solution is selected, and `objective_mean`, `objective_variance`, and `runs` (reported as `3`) are provided, matching the original multi-run reporting expectations. The SA path (used for small instances via `qaoa_solver.py`) performs `N_RUNS = 5` independent restarts.
 
 **Reason**
-Provides accurate multi‑run statistics while using SA instead of QAOA, satisfying the specification without requiring quantum hardware.
+Provides accurate multi-run statistics while using a quantum-inspired solver instead of QAOA, satisfying the specification without requiring quantum hardware.
 
 ---
 
@@ -277,10 +274,10 @@ Navbar also includes `Benchmark` and `Analytics` links for the v2 pages.
 | # | Area | Spec Says | Shipped | Impact |
 |---|------|-----------|---------|--------|
 | 1 | QUBO encoding | Arc vars O(N²K) | Assignment vars O(NK) | Smaller QUBO, no subtour constraint |
-| 2 | Quantum solver | Qiskit QAOA circuit | QUBO Simulated Annealing | No Qiskit circuit execution |
+| 2 | Quantum solver | Qiskit QAOA circuit | BQPhy quantum-inspired evolutionary optimizer (primary); SA / exhaustive / NN+2opt for smaller/larger sizes | No Qiskit circuit execution |
 | 3 | QUBO constraints | Includes H_subtour | H_subtour omitted | Subtours prevented in decoder |
-| 4 | QAOA multi-run | 5–10 independent runs | 5 independent runs of SA | runs=5 in API response |
-| 5 | Qubit budget | 4–8 customers | Up to 8 customers, K auto-clamped to 24-qubit limit | Transparent to user |
+| 4 | QAOA multi-run | 5–10 independent runs | 3 independent BQPhy restarts (5 SA restarts for small instances) | runs=3 (or 5) in API response |
+| 5 | Qubit budget | 4–8 customers | Up to 50 customers (BQPhy); clustering applied above that limit | Transparent to user |
 | 6 | Fallback | NN heuristic | NN + 2-opt improvement | Better fallback route quality |
 | 7 | Compare response | No `winner` field | `winner` field added | Needed by frontend |
 | 8 | Routes | 4 v1 routes | 4 v1 + 3 v2 routes | Extra analytics features |

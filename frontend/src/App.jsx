@@ -7,6 +7,7 @@ import Upload from './pages/Upload'
 import Dashboard from './pages/Dashboard'
 import Benchmark from './pages/Benchmark'
 import Analytics from './pages/Analytics'
+import QuantumExplorer from './pages/QuantumExplorer'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
               <Route path="/dashboard"  element={<Dashboard />} />
               <Route path="/benchmark"  element={<Benchmark />} />
               <Route path="/analytics"  element={<Analytics />} />
+              <Route path="/quantum-explorer" element={<QuantumExplorer />} />
               <Route path="*"           element={<Navigate to="/" replace />} />
             </Routes>
           </main>

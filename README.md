@@ -11,7 +11,7 @@ GreenRoute V7 is a comprehensive Route Optimization application featuring a dual
 - **Analytics:** Benchmark performance between different solvers.
 
 ## Tech Stack
-- **Backend:** Python, FastAPI, OR-Tools, Qiskit
+- **Backend:** Python, FastAPI, OR-Tools, NumPy (QUBO / BQPhy quantum-inspired solver)
 - **Frontend:** React, Node.js (Vite/Next.js)
 - **Testing:** Pytest
 
@@ -63,7 +63,9 @@ pytest
 
 ## CSV Format
 The application expects uploaded dataset CSVs to have the following columns (example):
-`id, lat, lng, demand`
+`Customer_ID, Latitude, Longitude, Demand`
+
+Example row: `1,12.9716,77.5946,10.0`
 
 ## Project Screenshots
 *(Placeholder for UI screenshots. Add images here once UI is finalized)*
@@ -71,7 +73,7 @@ The application expects uploaded dataset CSVs to have the following columns (exa
 - [Screenshot 2: Analytics Dashboard]
 
 ## Known Limitations
-- Quantum solver may experience timeout on datasets larger than 15 nodes due to hardware constraints.
+- Quantum solver (BQPhy) handles up to 50 customers directly; larger datasets are split into clusters of ≤8 customers and solved per-cluster.
 - Real-time traffic data is not yet integrated.
 
 ## Team Members

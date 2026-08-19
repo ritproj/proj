@@ -1,5 +1,5 @@
 import React from 'react'
-import { TrendingDown, Minus } from 'lucide-react'
+import { TrendingDown, Minus, Leaf } from 'lucide-react'
 
 /**
  * Formats a percentage saving for display.
@@ -50,6 +50,11 @@ export default function SustainabilitySummary({ savings, co2SavedKg }) {
     { label: 'CO₂',      ...co2Pct  },
   ]
 
+  // Headline: best improvement across all metrics
+  const bestImprovement = [savings.distance_pct, savings.fuel_pct, savings.co2_pct]
+    .filter(v => v != null && v > 0)
+    .sort((a, b) => b - a)[0]
+
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-4">
@@ -59,10 +64,27 @@ export default function SustainabilitySummary({ savings, co2SavedKg }) {
 
       {anyImprovement ? (
         <>
+          {/* Headline improvement number */}
+          {bestImprovement != null && (
+            <div className="mb-4 bg-green-900/15 border border-green-700/30 rounded-xl px-4 py-3 flex items-center gap-3">
+              <Leaf size={20} className="text-green-400 shrink-0" />
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-0.5">Best Improvement</p>
+                <p className="text-2xl font-extrabold text-green-400">
+                  -{bestImprovement.toFixed(1)}%
+                </p>
+              </div>
+              <p className="text-gray-500 text-xs ml-2 leading-snug">
+                reduction versus classical solver
+              </p>
+            </div>
+          )}
+
           <p className="text-gray-400 text-sm mb-4">Quantum Route Saves</p>
           <div className="grid grid-cols-3 gap-3">
             {rows.map(({ label, display, positive, negative, neutral }) => (
-              <div key={label} className="bg-gray-800 rounded-xl p-4 text-center">
+              <div key={label} className="bg-gray-800 rounded-xl p-4 text-center
+                hover:bg-gray-800/80 transition-colors">
                 <p className="text-gray-500 text-xs mb-2 uppercase tracking-wider">{label}</p>
                 <p className={`text-xl font-bold ${
                   positive ? 'text-green-400' : negative ? 'text-red-400' : 'text-yellow-400'

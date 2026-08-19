@@ -430,7 +430,9 @@ def _bqphy_solve_direct(
         method="bqphy",
         distance_matrix=dist_matrix,
         infeasible_reason=reason,
+        convergence_data=[round(float(f), 4) for f in all_fitnesses],
     )
+
 
 
 # ---------------------------------------------------------------------------

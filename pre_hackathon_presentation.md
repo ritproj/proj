@@ -266,13 +266,14 @@ Optimization
 
 - Google OR-Tools
 
-Quantum (Formulation)
+Quantum (QUBO Formulation)
 
-- Qiskit (QUBO mapping)
+- NumPy / Python (QUBO matrix construction)
 
-Optimization (Solver)
+Optimization (Quantum-Inspired Solver)
 
-- NumPy / Python (Simulated Annealing)
+- BQPhy evolutionary optimizer (custom quantum-inspired search)
+- Simulated Annealing (fallback for small instances)
 
 Visualization
 
@@ -319,8 +320,8 @@ to build a practical hybrid logistics system.
 
 Key Innovations
 
-- Hybrid OR-Tools + QAOA workflow
-- QUBO-based CVRP formulation
+- Hybrid OR-Tools + QUBO workflow
+- QUBO-based CVRP formulation (quantum-inspired optimization)
 - Green logistics optimization
 - Fuel and CO₂ estimation
 - Interactive visualization dashboard

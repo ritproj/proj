@@ -8,12 +8,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import classical, compare, quantum, upload
-from app.routes import benchmark, analytics, fleet, reset
+from app.routes import benchmark, analytics, fleet, reset, convergence
 
 app = FastAPI(
     title="GreenRoute API",
-    description="Quantum Assisted Capacitated Vehicle Routing — QT-6.22 v2",
-    version="2.1.0",
+    description="Quantum Assisted Capacitated Vehicle Routing — QT-6.22 v7.2",
+    version="7.2.0",
 )
 
 # ---------------------------------------------------------------------------
@@ -50,10 +50,11 @@ app.include_router(compare.router,   prefix="/api", tags=["Compare"])
 # ---------------------------------------------------------------------------
 # v2 Routers (new)
 # ---------------------------------------------------------------------------
-app.include_router(benchmark.router, prefix="/api", tags=["Benchmark"])
-app.include_router(analytics.router, prefix="/api", tags=["Analytics"])
-app.include_router(fleet.router,     prefix="/api", tags=["Fleet"])
-app.include_router(reset.router,     prefix="/api", tags=["Reset"])
+app.include_router(benchmark.router,   prefix="/api", tags=["Benchmark"])
+app.include_router(analytics.router,   prefix="/api", tags=["Analytics"])
+app.include_router(fleet.router,       prefix="/api", tags=["Fleet"])
+app.include_router(reset.router,       prefix="/api", tags=["Reset"])
+app.include_router(convergence.router, prefix="/api", tags=["Convergence"])
 
 
 # ---------------------------------------------------------------------------

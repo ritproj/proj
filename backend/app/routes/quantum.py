@@ -63,6 +63,7 @@ async def run_quantum(request: Request):
         "runs":               result.runs,
         "n_vars":             result.n_vars,
         "method":             result.method,
+        "convergence_data":   result.convergence_data,
     }
 
     # Persist for comparison + analytics
@@ -79,6 +80,7 @@ async def run_quantum(request: Request):
         "runs": result.runs,
         "n_vars": result.n_vars,
         "method": result.method,
+        "convergence_data": result.convergence_data,
     }
     request.app.state.quantum_routes = result.routes
     if getattr(request.app.state, "dist_matrix", None) is None:
